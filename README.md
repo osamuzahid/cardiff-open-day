@@ -18,4 +18,3 @@ To run the project locally, follow these steps:
 You can use a simple Python HTTP server to run this project locally. Open a terminal or command prompt in the project folder and run the following:
 
 python -m http.server
-
