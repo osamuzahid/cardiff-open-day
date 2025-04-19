@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Cardiff Open Day</title>
+  <style>
+    /* Page-wide styles */
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+    }
+
+    /* Main page heading */
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    /* Topic heading */
+    h2 {
+      margin-top: 0em;
+      margin-bottom: 1em;
+      font-style: italic;
+    }
+
+    /* Individual program styling */
+    .program {
+      margin-left: 0px;
+      margin-bottom: 1em;
+      margin-top: 1em;
+    }
+
+    .program-title {
+      font-weight: bold;
+    }
+
+    .program-time {
+      color: gray;
+    }
+
+    /* Search and sort controls */
+    #search {
+      padding: 8px;
+      margin-bottom: 10px;
+      width: 300px;
+    }
+
+    #sort {
+      padding: 8px;
+      margin-bottom: 20px;
+    }
+
+    /* Topic image styling */
+    .topic-image {
+      width: 200px;
+      height: 140px;
+      object-fit: cover;
+      margin-right: 15px;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Main Heading -->
+  <h1>Cardiff University Open Day</h1>
+  <!-- Cover image placeholder -->
+  <div id="main-image"></div>
+  <!-- Search input -->
+  <input type="text" id="search" placeholder="Search programs...">
+  <!-- Sort dropdown -->
+  <select id="sort">
+    <option value="time">Sort results by time</option>
+    <option value="title">Sort results by title</option>
+  </select>
+  <!-- Main content area -->
+  <div id="content">Loading...</div>
+
+  <script>
+    //Global state variables
+    let originalData = null;
+    let currentSearch = '';
+    let currentSort = 'time';
+
+    //Load JSON data and initialize app
+    fetch('./OpenDay.json')
+      .then(response => response.json())
+      .then(data => {
+        originalData = data;
+        document.getElementById('search').value = ''; //Clearing search field on page load
+        console.log("Loaded data:", data); //Checking if JSON data loaded successfully
+
+        //Insert the main cover image
+        if (data.cover_image) {
+          document.getElementById('main-image').innerHTML = `
+            <div style="text-align: center;">
+              <img src="${data.cover_image}" alt="Open Day"
+                   style="max-width: 100%; height: auto; margin-bottom: 20px;">
+            </div>`;
+        }
+
+        updateDisplay(); //initial render
+
+        //Search input updates
+        document.getElementById('search').addEventListener('input', (e) => {
+          currentSearch = e.target.value.toLowerCase();
+          updateDisplay();
+        });
+
+        //Sort selection changes
+        document.getElementById('sort').addEventListener('change', (e) => {
+          currentSort = e.target.value;
+          updateDisplay();
+        });
+      })
+      .catch(error => {
+        //Show error message if data fails to load
+        document.getElementById('content').innerHTML = 'Failed to load open day data';
+        console.error(error);
+      });
+
+    //Filters, sorts, and re-renders the display
+    function updateDisplay() {
+      if (!originalData) return;
+
+      //To avoid mutating the original data
+      const filteredData = JSON.parse(JSON.stringify(originalData));
+
+      //Filter programs based on search text
+      filteredData.topics = filteredData.topics.map(topic => ({
+        ...topic,
+        programs: topic.programs.filter(program =>
+          program.title.toLowerCase().includes(currentSearch) ||
+          (program.description_short && program.description_short.toLowerCase().includes(currentSearch))
+        )
+      })).filter(topic => topic.programs.length > 0);
+
+      //Sort programs by time or alphabetically
+      filteredData.topics.forEach(topic => {
+        topic.programs.sort((a, b) => {
+          if (currentSort === 'time') {
+            return new Date(a.start_time) - new Date(b.start_time);
+          } else {
+            return a.title.localeCompare(b.title);
+          }
+        });
+      });
+
+      //In case there are no matches
+      if (filteredData.topics.length === 0) {
+        document.getElementById('content').innerHTML = `
+          <p style="margin-top: 2em; font-style: italic;">
+            No matching programs found.
+          </p>`;
+        return;
+      }
+
+      renderPrograms(filteredData); //render filtered/sorted data
+    }
+
+    //Renders all topics and their programs to the page
+    function renderPrograms(data) {
+  const content = document.getElementById('content');
+  content.innerHTML = ''; //Clear previous output
+
+  data.topics.forEach(topic => {
+    const topicEl = document.createElement('div');
+
+    // Display image, title, and description for each topic
+    const topicHtml = `
+      <div style="display: flex; align-items: start;">
+        ${topic.cover_image ? `<img src="${topic.cover_image}" alt="${topic.name}" class="topic-image">` : ''}
+        <div>
+          <h2>${topic.name}</h2>
+          <p>${topic.description}</p>
+        </div>
+      </div>
+    `;
+    topicEl.innerHTML = topicHtml;
+
+    //Helper function to guard against invalid time data
+    function formatTime(timeString) {
+      const date = new Date(timeString);
+      return isNaN(date) ? '' : date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    //Add each program under the topic
+    topic.programs.forEach(program => {
+      const prog = document.createElement('div');
+      prog.className = 'program';
+
+      const location = program.location || {};
+
+      prog.innerHTML = `
+        <div class="program-title">${program.title}</div>
+        <div class="program-time">${formatTime(program.start_time)} - ${formatTime(program.end_time)}</div>
+        <div>${program.description_short || ''}</div>
+        <div><b><i>Room:</i></b> ${program.room}</div>
+        <div><b><i>Location:</i></b> ${location.title || 'N/A'}</div>
+        <div><b><i>Address:</i></b> ${location.address || 'Not available'}</div>
+        <div><b><i>Postcode:</i></b> ${location.postcode || 'Not available'}</div>
+        ${location.website ? `<div><a href="${location.website}" target="_blank">More information about the ${location.title}</a></div>` : ''}
+      `;
+      topicEl.appendChild(prog);
+    });
+
+    content.appendChild(topicEl); //Add to main container
+  });
+}
+  </script>
+</body>
+</html>
