@@ -1,6 +1,6 @@
 # Cardiff University Open Day
 
-This project is a simple web app for browsing programs available during the Cardiff University Open Day. It allows users to search and sort the programs by time or title, displaying detailed information about each topic and program, including location, description, and times.
+This project is a simple web app for browsing programs available during the Cardiff University Open Day. It allows users to search and sort the programs by time or title and view detailed information about each topic and program, including location, description, and times.
 
 ## Features
 - Displays detailed information about each program
