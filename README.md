@@ -17,4 +17,18 @@ To run the project locally, follow these steps:
 ### 2. Run a Local Server
 You can use a simple Python HTTP server to run this project locally. Open a terminal or command prompt in the project folder and run the following:
 
-python -m http.server
+`python -m http.server`
+
+### 3. View the Web App
+
+Once the server is running, you can view the web app by navigating to the following URL in your browser:
+`http://localhost:8000`
+
+If you need to use a different port (in case port `8000` is already in use), you can specify a custom port like this and access the webapp at the specified port:
+
+`python -m http.server portNumber`
+
+
+
+
+
